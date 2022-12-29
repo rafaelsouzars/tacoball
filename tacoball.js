@@ -4,10 +4,12 @@
 	Biblioteca "Brazuca" para criação de jogos 2D em HTML5.
 */
 
-const TamanhoTela = {
+const CONFIG_TELA = {
 	altura: 480,
-	largura: 320
+	largura: 320,
+	gravidade: 480/1.3
 }
+
 
 
 //Classe de inicialização da tela
@@ -23,16 +25,21 @@ class Tela {
 	#tela;
 	#canvas;
 	#ctx;
-	#barra;
-	#evento;		
-	
+	#barra;	
+	//Eventos
+	#evtDesenharTudo;
+	#evtDesenharHUD;	
+	#evtDesenharJogadores;
+	#evtDenharInimigos;
 	
 	//Construtor do objeto "Tela"
 	constructor(){
 		//Iniciando valores padrões do objeto
-		this.#_altura = TamanhoTela.altura;
-		this.#_largura = TamanhoTela.largura;
-		this.#evento = new CustomEvent("desenhar",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});		
+		this.#_altura = CONFIG_TELA.altura;
+		this.#_largura = CONFIG_TELA.largura;
+		this.#evtDesenharHUD = new CustomEvent("desenharHUD",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});		
+		this.#evtDesenharJogadores = new CustomEvent("desenharJogadores",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});
+		this.#evtDenharInimigos = new CustomEvent("desenharInimigos",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});
 		console.log("Objeto 'Tela' foi criado.");
 		
 		//Criando dinâmicamente o elemento canvas no HTML
@@ -47,9 +54,7 @@ class Tela {
 			document.body.appendChild(canvas);
 		
 			this.#tela = document.getElementById(canvas.id);
-			this.#ctx = this.#tela.getContext("2d");			
-			console.log("Tela desenhada");
-			
+			this.#ctx = this.#tela.getContext("2d");				
 		}
 		
 		catch(err){
@@ -61,7 +66,7 @@ class Tela {
 		
 		setInterval(function(){
 			this.desenharTela();
-		}.bind(this),1000);
+		}.bind(this),1000/30);
 	}	
 	
 	#iniciarEventos(){
@@ -77,8 +82,10 @@ class Tela {
 	}	
 		
 	//Metodo responsavel em desenhar a tela do jogo
-	desenharTela(){			
-		this.#tela.dispatchEvent(this.#evento);				
+	desenharTela(){
+		this.#ctx.reset();
+		this.#tela.dispatchEvent(this.#evtDesenharJogadores);
+		this.#tela.dispatchEvent(this.#evtDesenharHUD);				
 	}
 	
 	get contextoTela(){
@@ -167,53 +174,58 @@ class Temporizador {
 
 class Jogador {
 	#id;
+	#indiceCamada = 1;
 	#ctx;
-	#posX = TamanhoTela.largura / 2;
-	#posY = TamanhoTela.altura / 2;
+	#posX = CONFIG_TELA.largura / 2;
+	#posY = CONFIG_TELA.altura / 2;
+	#altura = 10;
+	#largura = 10;
+	#velocidade = 10;
+	#gravidade = CONFIG_TELA.gravidade;
 	
 	constructor(ctx){
-		this.#ctx = ctx;
+		this.#ctx = ctx;	
+		this.desenhar();
+		document.addEventListener("desenharJogadores",function(e){
+			this.desenhar();
+		}.bind(this));
+		console.log("Objeto jogador foi criado.");
+	}
+	
+	desenhar(){
 		this.#ctx.fillStyle = "blue";
-		this.#ctx.fillRect(this.#posX,this.#posY,10,10);
-		document.addEventListener("desenhar",function(e){
-			console.log(e);
-			console.log(e.detail);
-		});
+		this.#ctx.fillRect(this.#posX,this.#posY,this.#largura,this.#altura);
 	}
 	
 	movimentoCima(){
-		if(this.#posY>0){
-			this.#ctx.reset();
-			this.#posY = this.#posY - 10;
-			this.#ctx.fillStyle = "blue";
-			this.#ctx.fillRect(this.#posX,this.#posY,10,10);
+		if(this.#posY > 0){			
+			this.#posY = this.#posY - this.#velocidade;							
+		}else{
+			this.#posY = 0;
 		}		
 	}
 	
 	movimentoBaixo(){
-		if(this.#posY<(TamanhoTela.altura-10)){
-			this.#ctx.reset();
-			this.#posY = this.#posY + 10;
-			this.#ctx.fillStyle = "blue";
-			this.#ctx.fillRect(this.#posX,this.#posY,10,10);
+		if(this.#posY < (CONFIG_TELA.altura - this.#altura)){			
+			this.#posY = this.#posY + this.#velocidade;			
+		}else{
+			this.#posY = CONFIG_TELA.altura - this.#altura;
 		}		
 	}
 	
 	movimentoDireita(){
-		if(this.#posX<(TamanhoTela.largura-10)){
-			this.#ctx.reset();
-			this.#posX = this.#posX + 10;
-			this.#ctx.fillStyle = "blue";
-			this.#ctx.fillRect(this.#posX,this.#posY,10,10);
+		if(this.#posX < (CONFIG_TELA.largura - this.#largura)){			
+			this.#posX = this.#posX + this.#velocidade;			
+		}else{
+			this.#posX = CONFIG_TELA.largura - this.#largura;	
 		}		
 	}
 	
 	movimentoEsquerda(){
-		if(this.#posX>0){
-			this.#ctx.reset();
-			this.#posX = this.#posX - 10;
-			this.#ctx.fillStyle = "blue";
-			this.#ctx.fillRect(this.#posX,this.#posY,10,10);
+		if(this.#posX > 0){			
+			this.#posX = this.#posX - this.#largura;			
+		}else{
+			this.#posX = 0;
 		}		
 	}
 	
@@ -233,24 +245,21 @@ class Controle {
 	#jogador;
 	
 	constructor(jogador){
+		console.log("Objeto Controle foi criado.");
 		
 		document.addEventListener("keydown",function(e){			
 			switch (e.code) {
 				case "ArrowUp":
-					jogador.movimentoCima();
-					console.log("Cima");
+					jogador.movimentoCima();					
 				break;
 				case "ArrowDown":
-					jogador.movimentoBaixo();
-					console.log("Baixo");
+					jogador.movimentoBaixo();					
 				break;
 				case "ArrowLeft":
-					jogador.movimentoEsquerda();
-					console.log("Esquerda");
+					jogador.movimentoEsquerda();					
 				break;
 				case "ArrowRight":
-					jogador.movimentoDireita();
-					console.log("Direita");
+					jogador.movimentoDireita();					
 				break;
 				case "KeyZ":
 					console.log("Z");
@@ -272,9 +281,9 @@ class Controle {
 		
 	}
 	
-	
 }
 
+//Classe base para as barras do HUD
 class Barra {
 	//Metodos e atributos
 	#_min = 0;
@@ -282,11 +291,10 @@ class Barra {
 	#valor = 100;
 	
 	constructor(){		
-		console.log("Objeto 'Barra' criada.");
+		console.log("Objeto 'Barra' foi criado.");
 	}
 	
-	get valor(){
-		console.log("Valor atual da barra: " + this.#valor);
+	get valor(){		
 		return this.#valor;
 	}
 	
@@ -294,47 +302,38 @@ class Barra {
 		if((valor<this.#_min)|(valor>this.#_max)){
 			console.log("Valor da barra fora do intervalo!!!");
 		}else{
-			this.#valor = valor;
-			console.log("Atualizando valor da barra: " + this.#valor);
+			this.#valor = valor;			
 		}		
 	}
 	
-	get limiteMinimo(){
-		console.log("Valor minimo da barra: " + this.#_min);
+	get limiteMinimo(){		
 		return this.#_min;		
 	}
 	
 	set limiteMinimo(min){
 		if(min<0){
-			this.#_min = 0;
-			console.log("Limite minimo da barra menor que zero. Atualizado para: " + this.#_min);
+			this.#_min = 0;			
 		}else{
 			if(min>=this.#_max){
-				this.#_min = this.#_max - 1;
-				console.log("Limite minimo da barra meior que o valor maximo. Atualizado para: " + this.#_min);
+				this.#_min = this.#_max - 1;				
 			}else{
-				this.#_min = min;
-				console.log("Limite minimo atualizado para: " + this.#_max);
+				this.#_min = min;				
 			}			
 		}		
 	}
 	
-	get limiteMaximo(){
-		console.log("Limite maximo da barra: " + this.#_max);
+	get limiteMaximo(){		
 		return this.#_max;		
 	}
 	
 	set limiteMaximo(max){
 		if(max<=this.#_min){
-			this.#_max = this.#_min + 1;
-			console.log("Limite maximo da barra menor que valor minimo. Atualizado para: " + this.#_max);
+			this.#_max = this.#_min + 1;			
 		}else{
 			if(max>100){
-				this.#_max = 100;
-				console.log("Limite maximo da barra meior que 100. Atualizado para: " + this.#_max);
+				this.#_max = 100;				
 			}else{
-				this.#_max = max;
-				console.log("Limite maximo atualizado para: " + this.#_max);
+				this.#_max = max;				
 			}			
 		}
 	}
@@ -343,23 +342,32 @@ class Barra {
 
 class BarraVida extends Barra {
 	#ctx;
+	#indiceCamada = 0;
+	#valor;
 	#_posX = 10;
 	#_posY = 10;
+	#_altura = 10;
+	
 	constructor(ctx){
 		super();
+		this.#valor = super.valor;
 		this.#ctx = ctx;
+		this.desenhar();
+		document.addEventListener("desenharHUD",function(e){
+			this.desenhar();
+		}.bind(this));
+		console.log("Objeto 'barra de vida' foi criado");
+	}
+	
+	desenhar(){
 		this.#ctx.fillStyle = "black";
-		this.#ctx.strokeRect(this.#_posX,this.#_posY,super.valor,10);
+		this.#ctx.strokeRect(this.#_posX,this.#_posY,super.valor,this.#_altura);
 		this.#ctx.fillStyle = "red";
-		this.#ctx.fillRect(this.#_posX,this.#_posY,super.valor,10);
+		this.#ctx.fillRect(this.#_posX,this.#_posY,super.valor,this.#_altura);
 	}
 	
 	set valor(valor){
 		super.valor = valor;		
-		this.#ctx.fillStyle = "red";
-		this.#ctx.strokeRect(this.#_posX,this.#_posY,valor,10);
-		this.#ctx.fillStyle = "red";
-		this.#ctx.fillRect(this.#_posX,this.#_posY,valor,10);
 	}
 	
 	posicao(posX,posY){
@@ -376,10 +384,5 @@ class BarraVida extends Barra {
 		}else{
 			this.#_posY = posY;
 		}		
-		
-		this.#ctx.fillStyle = "red";
-		this.#ctx.strokeRect(this.#_posX,this.#_posY,super.valor,10);
-		this.#ctx.fillStyle = "red";
-		this.#ctx.fillRect(this.#_posX,this.#_posY,super.valor,10);
 	}
 }
