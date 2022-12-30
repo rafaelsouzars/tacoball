@@ -30,26 +30,23 @@ class Tela {
 	#indJogadores = 1;
 	#indInimigos = 1;
 	#indItens = 1;
-	#listaJogadores;
-	#listaInimigos;	
-	#listaItens;
+	#listaSprites;	
 	//Eventos
 	#evtDesenharTudo;
-	#evtDesenharHUD;	
-	#evtDesenharJogadores;
-	#evtDesenharInimigos;
+	#evtDesenharHUD;
+	#evtDesenharSprites
+	//#evtDesenharJogadores;
+	//#evtDesenharInimigos;
 	
 	//Construtor do objeto "Tela"
 	constructor(){
 		//Iniciando valores padrões do objeto
 		this.#_altura = CONFIG_TELA.altura;
 		this.#_largura = CONFIG_TELA.largura;
-		this.#listaJogadores = [];
-		this.#listaInimigos = [];
-		this.#listaItens = [];
+		this.#listaSprites = [];		
 		this.#evtDesenharHUD = new CustomEvent("desenharHUD",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});		
-		this.#evtDesenharJogadores = new CustomEvent("desenharJogadores",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});
-		this.#evtDesenharInimigos = new CustomEvent("desenharInimigos",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});
+		this.#evtDesenharSprites = new CustomEvent("desenharSprites",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});
+		//this.#evtDesenharInimigos = new CustomEvent("desenharInimigos",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});
 		console.log("Objeto 'Tela' foi criado.");
 		
 		//Criando dinâmicamente o elemento canvas no HTML
@@ -95,9 +92,7 @@ class Tela {
 	desenharTela(){
 		this.#ctx.reset();
 		this.#tela.dispatchEvent(this.#evtDesenharHUD);
-		this.#tela.dispatchEvent(this.#evtDesenharJogadores);
-		this.#tela.dispatchEvent(this.#evtDesenharInimigos);
-						
+		this.#tela.dispatchEvent(this.#evtDesenharSprites);						
 	}
 	
 	get tela(){
@@ -109,37 +104,52 @@ class Tela {
 	}
 	
 	get alturaTela(){
-		
+		return this.#_altura;
 	}
 	
 	get larguraTela(){
-		
+		return this.#_largura;
 	}
 	
 	getJogador(id){		
-		return this.#listaJogadores.find((lista,indice,array) => lista.id === id);
+		return this.#listaSprites.find((lista,indice,array) => lista.id === id);
 	}
 	
 	getInimigo(id){		
-		return this.#listaInimigos.find((lista,indice,array) => lista.id === id);
-	}
-	
-	adicionarJogador(id,posX,posY){		
-		this.#listaJogadores.push(new Jogador(id,this.#ctx,posX,posY));
+		return this.#listaSprites.find((lista,indice,array) => lista.id === id);
 	}	
 	
-	adicionarInimigo(id,posX,posY){
-		this.#listaInimigos.push(new Inimigo(id,this.#ctx,posX,posY));
+	adicionarJogador(id,posX,posY,tamanho){
+		let obj = new Jogador(id,this.#ctx,posX,posY,tamanho);
+		this.#listaSprites.push(obj);
+		return obj;
+	}	
+	
+	adicionarInimigo(id,posX,posY,tamanho){
+		let obj = new Inimigo(id,this.#ctx,posX,posY,tamanho);
+		this.#listaSprites.push(obj);
+		return obj;
+	}
+	
+	adicionarProjetil(id,posX,posY,tamanho){
+		let obj = new Projetil(id,this.#ctx,posX,posY,tamanho);
+		this.#listaSprites.push(obj);
+		return obj;
 	}
 	
 	removerJogador(id){		
-		let indice = this.#listaJogadores.findIndex((lista,indice,array) => lista.id === id);
-		this.#listaJogadores.splice(indice,1);
+		let indice = this.#listaSprites.findIndex((lista,indice,array) => lista.id === id);
+		this.#listaSprites.splice(indice,1);
 	}	
 	
 	removerInimigo(id){
-		let indice = this.#listaInimigos.findIndex((lista,indice,array) => lista.id === id);
-		this.#listaInimigos.splice(indice,1);
+		let indice = this.#listaSprites.findIndex((lista,indice,array) => lista.id === id);
+		this.#listaSprites.splice(indice,1);
+	}
+	
+	removerProjetil(id){
+		let indice = this.#listaSprites.findIndex((lista,indice,array) => lista.id === id);
+		this.#listaSprites.splice(indice,1);
 	}
 	
 	adicionarItem(){
@@ -213,9 +223,9 @@ class Colisao {
 	constructor(jog){
 		this.#objColisao = [];
 		this.#listaAcoes = new ListaAcoes();		
-		document.addEventListener("jogMovimento",function(){
+		document.addEventListener("spriteMovimento",function(){
 			this.testarColisao(jog);
-		}.bind(this));		
+		}.bind(this));			
 	}
 	
 	adicionarAcao(id,idObjCol,callback,descricao){
@@ -254,6 +264,7 @@ class Colisao {
 	}
 }
 
+//Lista de ações
 class ListaAcoes {
 	#id;
 	#idObjCol;	
@@ -265,9 +276,9 @@ class ListaAcoes {
 	}
 	
 	adicionarAcao(id, idObjCol, callback, descricao){
-		let obj = new Object({ id: id, idObjCol: idObjCol, callback:  callback, descricao: descricao});
+		let obj = { id: id, idObjCol: idObjCol, callback:  callback, descricao: descricao};
 		this.#listaAcoes.push(obj);
-		console.log(this.#listaAcoes[0]);
+		console.log(obj);
 	}
 	
 	removerAcao(id){
@@ -288,22 +299,22 @@ class Controle {
 	#comando;	
 	#jogador;
 	
-	constructor(jogador){
+	constructor(sprite){
 		console.log("Objeto 'Controle' foi criado.");
 		
 		document.addEventListener("keydown",function(e){			
 			switch (e.code) {
 				case "ArrowUp":
-					jogador.movimentoCima();					
+					sprite.movimentoCima();					
 				break;
 				case "ArrowDown":
-					jogador.movimentoBaixo();					
+					sprite.movimentoBaixo();					
 				break;
 				case "ArrowLeft":
-					jogador.movimentoEsquerda();					
+					sprite.movimentoEsquerda();					
 				break;
 				case "ArrowRight":
-					jogador.movimentoDireita();					
+					sprite.movimentoDireita();					
 				break;
 				case "KeyZ":
 					console.log("Z");
@@ -318,10 +329,13 @@ class Controle {
 					console.log("ControlEsquerdo");
 				break;
 				case "Space":
+					sprite.movimentoTiro();
 					console.log("Espaço");
 				break;
 			}
 		});
+		
+		
 		
 	}
 	
@@ -428,41 +442,67 @@ class BarraVida extends Barra {
 	}
 }
 
-class Jogador {
+//Classe base de sprites
+class Sprite {
 	#id;
-	#tipo = "jogador";
+	#tipo = "sprite";
 	#indiceCamada = 1;
 	#tela;
+	#cor;
 	#ctx;
 	#posX = CONFIG_TELA.largura / 2;
 	#posY = CONFIG_TELA.altura / 2;
 	#altura = 10;
 	#largura = 10;
+	#tamanho = 10;
 	#velocidade = 10;
 	#gravidade = CONFIG_TELA.gravidade;
-	//Eventos
-	#evtJogMovimento;	
+	#visibilidade = true;
+	//Evento	
+	#evtSpriteMovimento;
+	#evtSpriteTiro;
+	#evtSpriteDestruir;
+		
 	
 	
-	constructor(id,ctx,posX,posY){
+	constructor(id,ctx,posX,posY,tamanho){
 		this.#id = id;
 		this.#posX = posX;
-		this.#posY = posY;
+		this.#posY = posY;		
+		this.#tamanho = tamanho;
+		this.#altura = this.#tamanho;
+		this.#largura = this.#tamanho;
+		this.#cor = "blue";
 		this.#tela = document.getElementById("tela");
-		this.#ctx = ctx;		
-		this.#evtJogMovimento = new CustomEvent("jogMovimento",{detail: "Movimento para cima",bubbles: true, cancelable: true});		
+		this.#ctx = ctx;
+		
+		this.#evtSpriteMovimento = new CustomEvent(this.#tipo + "Movimento",{detail: "Sprite em movimento",bubbles: true, cancelable: true});
+		this.#evtSpriteTiro = new CustomEvent(this.#tipo + "Tiro",{detail: "Sprite atirou",bubbles: true, cancelable: true});
+		this.#evtSpriteDestruir = new CustomEvent(this.#tipo + "Destruido",{detail: "Sprite foi destruido",bubbles: true, cancelable: true});
+		
 		this.desenhar();
-		document.addEventListener("desenharJogadores",function(e){
-			this.desenhar();
+		
+		document.addEventListener("desenharSprites",function(e){
+			if(this.#visibilidade){
+				this.desenhar();
+			}			
 		}.bind(this));
-		console.log("Objeto '" + this.#id + "' foi criado.");
+		console.log("Objeto sprite '" + this.#id + "' foi criado.");		
 	}	
 	
-	/*constructor(ctx){		
-		this(ctx,this.#posX,this.#posY);
-	}*/	
+	destruir(){
+		this.#tela.dispatchEvent(this.#evtSpriteDestruir);
+		this.#visibilidade = false;		
+		console.log("Objeto '" + this.#id + "' destruido.");		
+		
+	}	
+	
 	get id(){
 		return this.#id;
+	}
+	
+	get ctx(){
+		return this.#ctx;
 	}
 	
 	get posX(){
@@ -475,21 +515,52 @@ class Jogador {
 	
 	get largura(){
 		return this.#largura;
-	}
+	}	
 	
 	get altura(){
 		return this.#altura;
 	}
 	
+	get tamanho(){
+		return this.#tamanho;
+	}
+	
+	get tipo(){
+		return this.#tipo;
+	}
+
+	set tipo(tipo){
+		this.#tipo = tipo;
+	}
+	
+	set cor(cor){
+		this.#cor = cor;
+	}
+	
+	set tamanho(tamanho){
+		this.#altura = tamanho;
+		this.#largura = tamanho;
+	}
+	
+	set visibilidade(visibilidade){
+		this.#visibilidade = visibilidade;
+	}
+	
 	desenhar(){
-		this.#ctx.fillStyle = "blue";
+		this.#ctx.fillStyle = this.#cor;
 		this.#ctx.fillRect(this.#posX,this.#posY,this.#largura,this.#altura);
+	}
+	
+	movimentarSprite(posX,posY){
+		this.#posX = posX;
+		this.#posY = posY;
+		this.#tela.dispatchEvent(this.#evtSpriteMovimento);
 	}
 	
 	movimentoCima(){
 		if(this.#posY > 0){			
-			this.#posY = this.#posY - this.#velocidade;	
-			this.#tela.dispatchEvent(this.#evtJogMovimento);
+			this.#posY = this.#posY - this.#velocidade;
+			this.#tela.dispatchEvent(this.#evtSpriteMovimento);
 		}else{
 			this.#posY = 0;
 		}		
@@ -497,8 +568,8 @@ class Jogador {
 	
 	movimentoBaixo(){
 		if(this.#posY < (CONFIG_TELA.altura - this.#altura)){			
-			this.#posY = this.#posY + this.#velocidade;	
-			this.#tela.dispatchEvent(this.#evtJogMovimento);
+			this.#posY = this.#posY + this.#velocidade;
+			this.#tela.dispatchEvent(this.#evtSpriteMovimento);
 		}else{
 			this.#posY = CONFIG_TELA.altura - this.#altura;
 		}		
@@ -507,7 +578,7 @@ class Jogador {
 	movimentoDireita(){
 		if(this.#posX < (CONFIG_TELA.largura - this.#largura)){			
 			this.#posX = this.#posX + this.#velocidade;
-			this.#tela.dispatchEvent(this.#evtJogMovimento);
+			this.#tela.dispatchEvent(this.#evtSpriteMovimento);
 		}else{
 			this.#posX = CONFIG_TELA.largura - this.#largura;	
 		}		
@@ -516,7 +587,7 @@ class Jogador {
 	movimentoEsquerda(){
 		if(this.#posX > 0){			
 			this.#posX = this.#posX - this.#largura;
-			this.#tela.dispatchEvent(this.#evtJogMovimento);
+			this.#tela.dispatchEvent(this.#evtSpriteMovimento);
 		}else{
 			this.#posX = 0;
 		}		
@@ -530,7 +601,7 @@ class Jogador {
 		
 	}
 	
-	detectarColisao(obj){
+	detectarColisao(){
 		if(this.#posX < obj.posX + obj.largura &&
 		this.#posX + this.#largura > obj.posX &&
 		this.#posY < obj.posY + obj.altura &&
@@ -545,96 +616,47 @@ class Jogador {
 	
 }
 
-class Inimigo {
-	#id;
-	#tipo = "inimigo";
-	#indiceCamada = 1;
-	#ctx;
-	#posX = CONFIG_TELA.largura / 2;
-	#posY = CONFIG_TELA.altura / 2;
-	#altura = 10;
-	#largura = 10;
-	#velocidade = 10;
-	#gravidade = CONFIG_TELA.gravidade;
-	//Eventos
-	#evtIniMovimento;
+//Classe Jogador
+class Jogador extends Sprite {
 	
-	
-	constructor(id,ctx,posX,posY){
-		this.#id = id;
-		this.#posX = posX;
-		this.#posY = posY;
-		this.#ctx = ctx;
-		this.#evtIniMovimento = new CustomEvent("iniMovimento",{detail: "Movimento para cima",bubbles: true, cancelable: true});		
-		this.desenhar();
-		document.addEventListener("desenharInimigos",function(e){
-			this.desenhar();
-		}.bind(this));
-		console.log("Objeto '" + this.#id + "' foi criado.");
-	}
-	
-	get id(){
-		return this.#id;
-	}
-	
-	get posX(){
-		return this.#posX;
-	}
-	
-	get posY(){
-		return this.#posY;
-	}
-	
-	get largura(){
-		return this.#largura;
-	}
-	
-	get altura(){
-		return this.#altura;
-	}
-	
-	desenhar(){
-		this.#ctx.fillStyle = "red";
-		this.#ctx.fillRect(this.#posX,this.#posY,this.#largura,this.#altura);
-	}
-	
-	movimentoCima(){
-		if(this.#posY > 0){			
-			this.#posY = this.#posY - this.#velocidade;				
-		}else{
-			this.#posY = 0;
-		}		
-	}
-	
-	movimentoBaixo(){
-		if(this.#posY < (CONFIG_TELA.altura - this.#altura)){			
-			this.#posY = this.#posY + this.#velocidade;							
-		}else{
-			this.#posY = CONFIG_TELA.altura - this.#altura;
-		}		
-	}
-	
-	movimentoDireita(){
-		if(this.#posX < (CONFIG_TELA.largura - this.#largura)){			
-			this.#posX = this.#posX + this.#velocidade;			
-		}else{
-			this.#posX = CONFIG_TELA.largura - this.#largura;	
-		}		
-	}
-	
-	movimentoEsquerda(){
-		if(this.#posX > 0){			
-			this.#posX = this.#posX - this.#largura;						
-		}else{
-			this.#posX = 0;
-		}		
-	}
-	
-	movimentoPulo(){
 		
+	constructor(id,ctx,posX,posY,tamanho){
+		super(id,ctx,posX,posY,tamanho);
+		super.tipo = "jogador";			
 	}
 	
 	movimentoTiro(){
+			let obj = new Projetil("projetil2",super.ctx,super.posX+3,super.posY,4);			
+			let tInt = setInterval(function(){					
+				if(obj.posY>0){					
+					obj.movimentarSprite(obj.posX,obj.posY-10);					
+				}else{
+					obj.destruir();	
+					obj = null;					
+					clearInterval(tInt);									
+				}
+			}.bind(this),1000/30);				
 		
 	}
+	
+}
+
+//Classe Inimigo
+class Inimigo extends Sprite {	
+	
+	constructor(id,ctx,posX,posY,tamanho){
+		super(id,ctx,posX,posY,tamanho);
+		super.cor = "red";
+		super.tipo = "inimigo";
+	}	
+	
+}
+
+class Projetil extends Sprite {
+	
+	constructor(id,ctx,posX,posY,tamanho){		
+		super(id,ctx,posX,posY,tamanho);
+		super.tipo = "projetil";				
+	}
+	
 }
