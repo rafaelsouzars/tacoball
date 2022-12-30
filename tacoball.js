@@ -94,9 +94,10 @@ class Tela {
 	//Metodo responsavel em desenhar a tela do jogo
 	desenharTela(){
 		this.#ctx.reset();
+		this.#tela.dispatchEvent(this.#evtDesenharHUD);
 		this.#tela.dispatchEvent(this.#evtDesenharJogadores);
 		this.#tela.dispatchEvent(this.#evtDesenharInimigos);
-		this.#tela.dispatchEvent(this.#evtDesenharHUD);				
+						
 	}
 	
 	get tela(){
@@ -208,13 +209,18 @@ class Temporizador {
 class Colisao {
 	
 	#objColisao;
+	#listaAcoes;
 	constructor(jog){
 		this.#objColisao = [];
+		this.#listaAcoes = new ListaAcoes();		
 		document.addEventListener("jogMovimento",function(){
 			this.testarColisao(jog);
 		}.bind(this));		
 	}
 	
+	adicionarAcao(id,idObjCol,callback,descricao){
+		this.#listaAcoes.adicionarAcao(id,idObjCol,callback,descricao);
+	}	
 	
 	adicionarObjetoColisao(obj){
 		this.#objColisao.push(obj);		
@@ -229,8 +235,14 @@ class Colisao {
 		objA.posX + objA.largura > objB.posX &&
 		objA.posY < objB.posY + objB.altura &&
 		objA.altura + objA.posY > objB.posY){
-			//Colisão
-			console.log("Colisao com objeto: " + objB.id);
+			//Colisão			
+			try{
+				console.log("Colisão entre '" + objA.id + "' e '" + objB.id + "'");
+				this.#listaAcoes.executarAcao(objB.id);
+			}
+			catch{
+				console.log("Nenhuma ação vinculada a colisão com objeto: '" + objB.id + "'");
+			}			
 		}else{
 			//Sem colisão
 			
@@ -239,6 +251,34 @@ class Colisao {
 	
 	stringOf(){
 		this.#objColisao.forEach((element,index,array) => console.log("Objeto colisão #" + index + ": " + element.id));
+	}
+}
+
+class ListaAcoes {
+	#id;
+	#idObjCol;	
+	#callback;
+	#listaAcoes;
+	
+	constructor(){
+		this.#listaAcoes = [];
+	}
+	
+	adicionarAcao(id, idObjCol, callback, descricao){
+		let obj = new Object({ id: id, idObjCol: idObjCol, callback:  callback, descricao: descricao});
+		this.#listaAcoes.push(obj);
+		console.log(this.#listaAcoes[0]);
+	}
+	
+	removerAcao(id){
+		let indice = this.#listaAcoes.findIndex((lista,indice,array) => lista.id === id);
+		this.#listaAcoes.splice(indice,1);
+	}
+	
+	executarAcao(idObjCol){
+		let obj = this.#listaAcoes.find((lista,indice,array) => lista.idObjCol === idObjCol);
+		obj.callback();
+		console.log("Executar " + obj.id + " : " + obj.descricao);
 	}
 }
 
@@ -365,14 +405,11 @@ class BarraVida extends Barra {
 	
 	desenhar(){
 		this.#ctx.fillStyle = "black";
-		this.#ctx.strokeRect(this.#_posX,this.#_posY,super.valor,this.#_altura);
+		this.#ctx.strokeRect(this.#_posX,this.#_posY,super.limiteMaximo,this.#_altura);
 		this.#ctx.fillStyle = "green";
 		this.#ctx.fillRect(this.#_posX,this.#_posY,super.valor,this.#_altura);
-	}
+	}	
 	
-	set valor(valor){
-		super.valor = valor;		
-	}
 	
 	posicao(posX,posY){
 		if(posX<0){
@@ -404,8 +441,7 @@ class Jogador {
 	#velocidade = 10;
 	#gravidade = CONFIG_TELA.gravidade;
 	//Eventos
-	#evtJogMovimento;
-	
+	#evtJogMovimento;	
 	
 	
 	constructor(id,ctx,posX,posY){
@@ -419,7 +455,7 @@ class Jogador {
 		document.addEventListener("desenharJogadores",function(e){
 			this.desenhar();
 		}.bind(this));
-		console.log("Objeto " + this.#id + " foi criado.");
+		console.log("Objeto '" + this.#id + "' foi criado.");
 	}	
 	
 	/*constructor(ctx){		
@@ -534,7 +570,7 @@ class Inimigo {
 		document.addEventListener("desenharInimigos",function(e){
 			this.desenhar();
 		}.bind(this));
-		console.log("Objeto " + this.#id + " foi criado.");
+		console.log("Objeto '" + this.#id + "' foi criado.");
 	}
 	
 	get id(){
