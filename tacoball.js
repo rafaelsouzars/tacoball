@@ -25,21 +25,31 @@ class Tela {
 	#tela;
 	#canvas;
 	#ctx;
-	#barra;	
+	#barra;
+	//Lista de objetos (jogador/inimigo/itens) do jogo
+	#indJogadores = 1;
+	#indInimigos = 1;
+	#indItens = 1;
+	#listaJogadores;
+	#listaInimigos;	
+	#listaItens;
 	//Eventos
 	#evtDesenharTudo;
 	#evtDesenharHUD;	
 	#evtDesenharJogadores;
-	#evtDenharInimigos;
+	#evtDesenharInimigos;
 	
 	//Construtor do objeto "Tela"
 	constructor(){
 		//Iniciando valores padrões do objeto
 		this.#_altura = CONFIG_TELA.altura;
 		this.#_largura = CONFIG_TELA.largura;
+		this.#listaJogadores = [];
+		this.#listaInimigos = [];
+		this.#listaItens = [];
 		this.#evtDesenharHUD = new CustomEvent("desenharHUD",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});		
 		this.#evtDesenharJogadores = new CustomEvent("desenharJogadores",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});
-		this.#evtDenharInimigos = new CustomEvent("desenharInimigos",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});
+		this.#evtDesenharInimigos = new CustomEvent("desenharInimigos",{detail: "Desenhando e atualizando tela.",bubbles: true, cancelable: true});
 		console.log("Objeto 'Tela' foi criado.");
 		
 		//Criando dinâmicamente o elemento canvas no HTML
@@ -85,7 +95,12 @@ class Tela {
 	desenharTela(){
 		this.#ctx.reset();
 		this.#tela.dispatchEvent(this.#evtDesenharJogadores);
+		this.#tela.dispatchEvent(this.#evtDesenharInimigos);
 		this.#tela.dispatchEvent(this.#evtDesenharHUD);				
+	}
+	
+	get tela(){
+		
 	}
 	
 	get contextoTela(){
@@ -100,16 +115,33 @@ class Tela {
 		
 	}
 	
-	//Atualiza o objeto "tela"
-	atualizarTela(){
-		
+	getJogador(id){		
+		return this.#listaJogadores.find((lista,indice,array) => lista.id === id);
 	}
 	
-	ocultarTela(){
-		
+	getInimigo(id){		
+		return this.#listaInimigos.find((lista,indice,array) => lista.id === id);
 	}
 	
-	apresentarTela(){
+	adicionarJogador(id,posX,posY){		
+		this.#listaJogadores.push(new Jogador(id,this.#ctx,posX,posY));
+	}	
+	
+	adicionarInimigo(id,posX,posY){
+		this.#listaInimigos.push(new Inimigo(id,this.#ctx,posX,posY));
+	}
+	
+	removerJogador(id){		
+		let indice = this.#listaJogadores.findIndex((lista,indice,array) => lista.id === id);
+		this.#listaJogadores.splice(indice,1);
+	}	
+	
+	removerInimigo(id){
+		let indice = this.#listaInimigos.findIndex((lista,indice,array) => lista.id === id);
+		this.#listaInimigos.splice(indice,1);
+	}
+	
+	adicionarItem(){
 		
 	}
 }
@@ -172,69 +204,41 @@ class Temporizador {
 	
 }
 
-class Jogador {
-	#id;
-	#indiceCamada = 1;
-	#ctx;
-	#posX = CONFIG_TELA.largura / 2;
-	#posY = CONFIG_TELA.altura / 2;
-	#altura = 10;
-	#largura = 10;
-	#velocidade = 10;
-	#gravidade = CONFIG_TELA.gravidade;
+//Classe de tratamento de colisões
+class Colisao {
 	
-	constructor(ctx){
-		this.#ctx = ctx;	
-		this.desenhar();
-		document.addEventListener("desenharJogadores",function(e){
-			this.desenhar();
-		}.bind(this));
-		console.log("Objeto jogador foi criado.");
+	#objColisao;
+	constructor(jog){
+		this.#objColisao = [];
+		document.addEventListener("jogMovimento",function(){
+			this.testarColisao(jog);
+		}.bind(this));		
 	}
 	
-	desenhar(){
-		this.#ctx.fillStyle = "blue";
-		this.#ctx.fillRect(this.#posX,this.#posY,this.#largura,this.#altura);
+	
+	adicionarObjetoColisao(obj){
+		this.#objColisao.push(obj);		
 	}
 	
-	movimentoCima(){
-		if(this.#posY > 0){			
-			this.#posY = this.#posY - this.#velocidade;							
+	testarColisao(jog){		
+		this.#objColisao.forEach((obj,indice,array) => this.detectarColisao(jog,obj));		
+	}
+	
+	detectarColisao(objA,objB){		
+		if(objA.posX < objB.posX + objB.largura &&
+		objA.posX + objA.largura > objB.posX &&
+		objA.posY < objB.posY + objB.altura &&
+		objA.altura + objA.posY > objB.posY){
+			//Colisão
+			console.log("Colisao com objeto: " + objB.id);
 		}else{
-			this.#posY = 0;
-		}		
+			//Sem colisão
+			
+		}
 	}
 	
-	movimentoBaixo(){
-		if(this.#posY < (CONFIG_TELA.altura - this.#altura)){			
-			this.#posY = this.#posY + this.#velocidade;			
-		}else{
-			this.#posY = CONFIG_TELA.altura - this.#altura;
-		}		
-	}
-	
-	movimentoDireita(){
-		if(this.#posX < (CONFIG_TELA.largura - this.#largura)){			
-			this.#posX = this.#posX + this.#velocidade;			
-		}else{
-			this.#posX = CONFIG_TELA.largura - this.#largura;	
-		}		
-	}
-	
-	movimentoEsquerda(){
-		if(this.#posX > 0){			
-			this.#posX = this.#posX - this.#largura;			
-		}else{
-			this.#posX = 0;
-		}		
-	}
-	
-	movimentoPulo(){
-		
-	}
-	
-	movimentoTiro(){
-		
+	stringOf(){
+		this.#objColisao.forEach((element,index,array) => console.log("Objeto colisão #" + index + ": " + element.id));
 	}
 }
 
@@ -245,7 +249,7 @@ class Controle {
 	#jogador;
 	
 	constructor(jogador){
-		console.log("Objeto Controle foi criado.");
+		console.log("Objeto 'Controle' foi criado.");
 		
 		document.addEventListener("keydown",function(e){			
 			switch (e.code) {
@@ -362,7 +366,7 @@ class BarraVida extends Barra {
 	desenhar(){
 		this.#ctx.fillStyle = "black";
 		this.#ctx.strokeRect(this.#_posX,this.#_posY,super.valor,this.#_altura);
-		this.#ctx.fillStyle = "red";
+		this.#ctx.fillStyle = "green";
 		this.#ctx.fillRect(this.#_posX,this.#_posY,super.valor,this.#_altura);
 	}
 	
@@ -384,5 +388,217 @@ class BarraVida extends Barra {
 		}else{
 			this.#_posY = posY;
 		}		
+	}
+}
+
+class Jogador {
+	#id;
+	#tipo = "jogador";
+	#indiceCamada = 1;
+	#tela;
+	#ctx;
+	#posX = CONFIG_TELA.largura / 2;
+	#posY = CONFIG_TELA.altura / 2;
+	#altura = 10;
+	#largura = 10;
+	#velocidade = 10;
+	#gravidade = CONFIG_TELA.gravidade;
+	//Eventos
+	#evtJogMovimento;
+	
+	
+	
+	constructor(id,ctx,posX,posY){
+		this.#id = id;
+		this.#posX = posX;
+		this.#posY = posY;
+		this.#tela = document.getElementById("tela");
+		this.#ctx = ctx;		
+		this.#evtJogMovimento = new CustomEvent("jogMovimento",{detail: "Movimento para cima",bubbles: true, cancelable: true});		
+		this.desenhar();
+		document.addEventListener("desenharJogadores",function(e){
+			this.desenhar();
+		}.bind(this));
+		console.log("Objeto " + this.#id + " foi criado.");
+	}	
+	
+	/*constructor(ctx){		
+		this(ctx,this.#posX,this.#posY);
+	}*/	
+	get id(){
+		return this.#id;
+	}
+	
+	get posX(){
+		return this.#posX;
+	}
+	
+	get posY(){
+		return this.#posY;
+	}
+	
+	get largura(){
+		return this.#largura;
+	}
+	
+	get altura(){
+		return this.#altura;
+	}
+	
+	desenhar(){
+		this.#ctx.fillStyle = "blue";
+		this.#ctx.fillRect(this.#posX,this.#posY,this.#largura,this.#altura);
+	}
+	
+	movimentoCima(){
+		if(this.#posY > 0){			
+			this.#posY = this.#posY - this.#velocidade;	
+			this.#tela.dispatchEvent(this.#evtJogMovimento);
+		}else{
+			this.#posY = 0;
+		}		
+	}
+	
+	movimentoBaixo(){
+		if(this.#posY < (CONFIG_TELA.altura - this.#altura)){			
+			this.#posY = this.#posY + this.#velocidade;	
+			this.#tela.dispatchEvent(this.#evtJogMovimento);
+		}else{
+			this.#posY = CONFIG_TELA.altura - this.#altura;
+		}		
+	}
+	
+	movimentoDireita(){
+		if(this.#posX < (CONFIG_TELA.largura - this.#largura)){			
+			this.#posX = this.#posX + this.#velocidade;
+			this.#tela.dispatchEvent(this.#evtJogMovimento);
+		}else{
+			this.#posX = CONFIG_TELA.largura - this.#largura;	
+		}		
+	}
+	
+	movimentoEsquerda(){
+		if(this.#posX > 0){			
+			this.#posX = this.#posX - this.#largura;
+			this.#tela.dispatchEvent(this.#evtJogMovimento);
+		}else{
+			this.#posX = 0;
+		}		
+	}
+	
+	movimentoPulo(){
+		
+	}
+	
+	movimentoTiro(){
+		
+	}
+	
+	detectarColisao(obj){
+		if(this.#posX < obj.posX + obj.largura &&
+		this.#posX + this.#largura > obj.posX &&
+		this.#posY < obj.posY + obj.altura &&
+		this.#altura + this.#posY > obj.posY){
+			//Colisão
+			console.log("ok");
+		}else{
+			//Sem colisão
+			
+		}
+	}
+	
+}
+
+class Inimigo {
+	#id;
+	#tipo = "inimigo";
+	#indiceCamada = 1;
+	#ctx;
+	#posX = CONFIG_TELA.largura / 2;
+	#posY = CONFIG_TELA.altura / 2;
+	#altura = 10;
+	#largura = 10;
+	#velocidade = 10;
+	#gravidade = CONFIG_TELA.gravidade;
+	//Eventos
+	#evtIniMovimento;
+	
+	
+	constructor(id,ctx,posX,posY){
+		this.#id = id;
+		this.#posX = posX;
+		this.#posY = posY;
+		this.#ctx = ctx;
+		this.#evtIniMovimento = new CustomEvent("iniMovimento",{detail: "Movimento para cima",bubbles: true, cancelable: true});		
+		this.desenhar();
+		document.addEventListener("desenharInimigos",function(e){
+			this.desenhar();
+		}.bind(this));
+		console.log("Objeto " + this.#id + " foi criado.");
+	}
+	
+	get id(){
+		return this.#id;
+	}
+	
+	get posX(){
+		return this.#posX;
+	}
+	
+	get posY(){
+		return this.#posY;
+	}
+	
+	get largura(){
+		return this.#largura;
+	}
+	
+	get altura(){
+		return this.#altura;
+	}
+	
+	desenhar(){
+		this.#ctx.fillStyle = "red";
+		this.#ctx.fillRect(this.#posX,this.#posY,this.#largura,this.#altura);
+	}
+	
+	movimentoCima(){
+		if(this.#posY > 0){			
+			this.#posY = this.#posY - this.#velocidade;				
+		}else{
+			this.#posY = 0;
+		}		
+	}
+	
+	movimentoBaixo(){
+		if(this.#posY < (CONFIG_TELA.altura - this.#altura)){			
+			this.#posY = this.#posY + this.#velocidade;							
+		}else{
+			this.#posY = CONFIG_TELA.altura - this.#altura;
+		}		
+	}
+	
+	movimentoDireita(){
+		if(this.#posX < (CONFIG_TELA.largura - this.#largura)){			
+			this.#posX = this.#posX + this.#velocidade;			
+		}else{
+			this.#posX = CONFIG_TELA.largura - this.#largura;	
+		}		
+	}
+	
+	movimentoEsquerda(){
+		if(this.#posX > 0){			
+			this.#posX = this.#posX - this.#largura;						
+		}else{
+			this.#posX = 0;
+		}		
+	}
+	
+	movimentoPulo(){
+		
+	}
+	
+	movimentoTiro(){
+		
 	}
 }
