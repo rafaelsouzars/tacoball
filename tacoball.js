@@ -295,49 +295,123 @@ class ListaAcoes {
 
 //Classe inicialização dos controles
 class Controle {
-	#id;
-	#comando;	
-	#jogador;
 	
+	#comando;
+	#tecla;
+		
 	constructor(sprite){
-		console.log("Objeto 'Controle' foi criado.");
+		console.log("Objeto 'Controle' foi criado.");	
+		
+		this.#comando = [
+			{tecla: 'ArrowUp', estado: 'up', acao: ()=>{sprite.movimentoCima()}},
+			{tecla: 'ArrowDown', estado: 'up', acao: ()=>{sprite.movimentoBaixo()}},
+			{tecla: 'ArrowLeft', estado: 'up', acao: ()=>{sprite.movimentoEsquerda()}},
+			{tecla: 'ArrowRight', estado: 'up', acao: ()=>{sprite.movimentoDireita()}},
+			{tecla: 'KeyZ', estado: 'up', acao: ()=>{console.log("Z")}},
+			{tecla: 'KeyX', estado: 'up', acao: ()=>{console.log("X")}},
+			{tecla: 'Shiftleft', estado: 'up', acao: ()=>{console.log("ShiftEsquerdo")}},
+			{tecla: 'ControlLeft', estado: 'up', acao: ()=>{console.log("ShiftEsquerdo")}},
+			{tecla: 'Space', estado: 'up', acao: ()=>{sprite.movimentoTiro()}}		
+		];
+		
+		let indice;
+		
+		console.log(this.#comando);
 		
 		document.addEventListener("keydown",function(e){			
 			switch (e.code) {
-				case "ArrowUp":
-					sprite.movimentoCima();					
+				case "ArrowUp":					
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowUp");
+					this.#comando[indice].estado = "down";				
 				break;
 				case "ArrowDown":
-					sprite.movimentoBaixo();					
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowDown");
+					this.#comando[indice].estado = "down";					
 				break;
 				case "ArrowLeft":
-					sprite.movimentoEsquerda();					
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowLeft");
+					this.#comando[indice].estado = "down";					
 				break;
 				case "ArrowRight":
-					sprite.movimentoDireita();					
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowRight");
+					this.#comando[indice].estado = "down";				
 				break;
 				case "KeyZ":
-					console.log("Z");
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "KeyZ");
+					this.#comando[indice].estado = "down";
 				break;
 				case "KeyX":
-					console.log("X");
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "KeyX");
+					this.#comando[indice].estado = "down";
 				break;
 				case "ShiftLeft":
-					console.log("ShiftEsquerdo");
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ShiftLeft");
+					this.#comando[indice].estado = "down";
 				break;
 				case "ControlLeft":
-					console.log("ControlEsquerdo");
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ControlLeft");
+					this.#comando[indice].estado = "down";
 				break;
 				case "Space":
-					sprite.movimentoTiro();
-					console.log("Espaço");
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "Space");
+					this.#comando[indice].estado = "down";
 				break;
 			}
-		});
+		}.bind(this));
 		
+		document.addEventListener("keyup",function(e){			
+			switch (e.code) {
+				case "ArrowUp":
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowUp");
+					this.#comando[indice].estado = "up";				
+				break;
+				case "ArrowDown":
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowDown");
+					this.#comando[indice].estado = "up";					
+				break;
+				case "ArrowLeft":
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowLeft");
+					this.#comando[indice].estado = "up";				
+				break;
+				case "ArrowRight":
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowRight");
+					this.#comando[indice].estado = "up";					
+				break;
+				case "KeyZ":
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "KeyZ");
+					this.#comando[indice].estado = "up";
+				break;
+				case "KeyX":
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "KeyX");
+					this.#comando[indice].estado = "up";
+				break;
+				case "ShiftLeft":
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ShiftLeft");
+					this.#comando[indice].estado = "up";
+				break;
+				case "ControlLeft":
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ControlLeft");
+					this.#comando[indice].estado = "up";
+				break;
+				case "Space":
+					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "Space");
+					this.#comando[indice].estado = "up";
+				break;
+			}
+		}.bind(this));	
+		
+		setInterval(function(){
+			this.#comando.forEach((obj,indice,array) => {
+				if(obj.estado == "down"){
+					obj.acao();
+				}
+			});
+		}.bind(this),50);
+
 		
 		
 	}
+	
 	
 }
 
@@ -635,7 +709,7 @@ class Jogador extends Sprite {
 					obj = null;					
 					clearInterval(tInt);									
 				}
-			}.bind(this),1000/30);				
+			}.bind(this),1000/20);				
 		
 	}
 	
