@@ -120,9 +120,17 @@ class Tela {
 		return this.#listaSprites.find((lista,indice,array) => lista.id === id);
 	}
 	
+	get quadrosPorSegundo(){
+		return this.#temporizador.quadrosPorSegundo;
+	}
+	
+	set quadrosPorSegundo(qps){
+		this.#temporizador.quadrosPorSegundo = qps;
+	}
+	
 	pausarRelogio(){
 		this.#temporizador.pausar();
-	}
+	}	
 	
 	rodando(callback){
 		document.addEventListener("disparoQuadro",function(){
@@ -178,6 +186,7 @@ class Temporizador {
 	#horas;
 	#estado;
 	#relogio;
+	#qps = 8;
 	//Eventos
 	#evtQuadro;
 	#evtSegundo;
@@ -185,7 +194,7 @@ class Temporizador {
 	#evtHora;
 	
 	constructor(){		
-		this.#intervalo = 1000/30;
+		this.#intervalo = 1000/this.#qps;
 		this.#quadro = 0;
 		this.#estado = RELOGIO.iniciar;
 		this.#segundos = 0;
@@ -230,7 +239,7 @@ class Temporizador {
 							}
 							this.segundos = 0;							
 						}						
-						//console.log(this.segundos);
+						//console.log(this.segundos);						
 						this.#quadro = 0;					
 					}					
 				break;
@@ -305,6 +314,15 @@ class Temporizador {
 		this.#horas = horas;
 	}
 	
+	get quadroPorSegundo(){
+		return this.#qps;
+	}
+	
+	set quadroPorSegundo(qps){
+		this.#qps = qps;
+		this.#intervalo = 1000/this.#qps;
+	}
+	
 	mostrarRelogio(){
 		let horas = this.#horas.toLocaleString('pt-BR', {
 		  minimumIntegerDigits: 2, 
@@ -332,7 +350,7 @@ class Colisao {
 	constructor(jog){
 		this.#objColisao = [];
 		this.#listaAcoes = new ListaAcoes();		
-		document.addEventListener("spriteMovimento",function(){
+		document.addEventListener("disparoQuadro",function(){
 			this.testarColisao(jog);
 		}.bind(this));			
 	}
@@ -594,10 +612,13 @@ class BarraVida extends Barra {
 		this.#valor = super.valor;
 		this.#ctx = ctx;
 		this.desenhar();
+		
+		console.log("Objeto 'barra de vida' foi criado");
+		
 		document.addEventListener("desenharHUD",function(e){
 			this.desenhar();
 		}.bind(this));
-		console.log("Objeto 'barra de vida' foi criado");
+		
 	}
 	
 	desenhar(){
@@ -638,7 +659,7 @@ class Sprite {
 	#altura = 10;
 	#largura = 10;
 	#tamanho = 10;
-	#velocidade = 3;
+	#velocidade = 10;
 	#gravidade = CONFIG_TELA.gravidade;
 	#visibilidade = true;
 	//Evento	
@@ -790,6 +811,17 @@ class Sprite {
 		}		
 	}
 	
+	movimentoBala(){
+		document.addEventListener("disparoQuadro",function(){
+			if(this.#posY > 0){			
+				this.#posY = this.#posY - this.#velocidade;
+				this.#tela.dispatchEvent(this.#evtSpriteMovimento);
+			}else{
+				this.#posY = 0;
+			}
+		}.bind(this),false);
+	}
+	
 	movimentoPulo(){
 		
 	}
@@ -816,12 +848,19 @@ class Sprite {
 //Classe Jogador
 class Jogador extends Sprite {
 	
-		
+	#bala;
+	#emMov;
+	
 	constructor(id,ctx,posX,posY,tamanho){
 		super(id,ctx,posX,posY,tamanho);
-		super.tipo = "jogador";			
-	}
+		super.tipo = "jogador";		
+		this.#emMov = false;		
+	}	
 	
+	movimentoTiro(){
+			
+		
+	}
 	
 }
 
