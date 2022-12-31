@@ -10,6 +10,13 @@ const CONFIG_TELA = {
 	gravidade: 480/1.3
 }
 
+const RELOGIO = {
+	iniciar: "iniciar",
+	reiniciar: "reiniciar",
+	pausar: "pausar",
+	parar: "parar"
+}
+
 
 
 //Classe de inicialização da tela
@@ -25,6 +32,7 @@ class Tela {
 	#tela;
 	#canvas;
 	#ctx;
+	#temporizador;
 	#barra;
 	//Lista de objetos (jogador/inimigo/itens) do jogo
 	#indJogadores = 1;
@@ -68,24 +76,17 @@ class Tela {
 			console.log(err.message);
 		}		
 
-		//this.#iniciarEventos();
+		this.#iniciarTemporizador();	
 		
 		
-		setInterval(function(){
+	}		
+	
+	#iniciarTemporizador(){		
+		this.#temporizador = new Temporizador();		
+		
+		document.addEventListener("disparoQuadro",function(){
 			this.desenharTela();
-		}.bind(this),1000/30);
-	}	
-	
-	#iniciarEventos(){
-		this.#tela.addEventListener("desenhar",function(e){
-			console.log(e);
-			console.log(e.detail);
-		});
-	}
-	
-	
-	iniciarTemporizador(){		
-			
+		}.bind(this),false);
 	}	
 		
 	//Metodo responsavel em desenhar a tela do jogo
@@ -117,7 +118,17 @@ class Tela {
 	
 	getInimigo(id){		
 		return this.#listaSprites.find((lista,indice,array) => lista.id === id);
-	}	
+	}
+	
+	pausarRelogio(){
+		this.#temporizador.pausar();
+	}
+	
+	rodando(callback){
+		document.addEventListener("disparoQuadro",function(){
+			callback();
+		}.bind(this),false);
+	}
 	
 	adicionarJogador(id,posX,posY,tamanho){
 		let obj = new Jogador(id,this.#ctx,posX,posY,tamanho);
@@ -161,57 +172,155 @@ class Tela {
 class Temporizador {
 	//Propriedades e atributos
 	#intervalo;
-	#milisegundo
-	#segundo;
-	#minuto;
-	#hora;
+	#quadro;
+	#segundos;
+	#minutos;
+	#horas;
 	#estado;
-	#f;
+	#relogio;
+	//Eventos
+	#evtQuadro;
+	#evtSegundo;
+	#evtMinuto;
+	#evtHora;
 	
-	constructor(){
-		this.#intervalo = 1000;
-		this.#estado = false;
-		this.#f = function(){
-			console.log("ok");
-		};
-	}
-	
-	get intervalo(){
-		return this.#intervalo;
-	}
-	
-	set intervalo(intervalo){
-		this.#intervalo = intervalo;
-	}
-	
-	estado(){		
-		this.#f;
-	}
-	
-	/*estado(estado){
-		this.#estado = estado;
-	}*/
-	
-	iniciarContador(segundos){		
+	constructor(){		
+		this.#intervalo = 1000/30;
+		this.#quadro = 0;
+		this.#estado = RELOGIO.iniciar;
+		this.#segundos = 0;
+		this.#minutos = 0;
+		this.#horas = 0;
+		//Inicializando eventos
+		this.#evtQuadro = new CustomEvent("disparoQuadro",{detail: "Um quadro foi disparado",bubble: true,cancelable: true});
+		this.#evtSegundo = new CustomEvent("disparoSegundo",{detail: "Um segundo foi disparado",bubble: true,cancelable: true});
+		this.#evtMinuto = new CustomEvent("disparoMinuto",{detail: "Um minuto foi disparado",bubble: true,cancelable: true});
+		this.#evtHora = new CustomEvent("disparoHora",{detail: "Um hora foi disparado",bubble: true,cancelable: true});
 		
-		if(segundos<0){
-			segundos++;			
-			console.log("Valor menor que zero. Atualizado para: " + segundos + "s");			
-		}else{
-			console.log("Iniciar contador em: " + segundos + "s");			
-		}
 		
-		let contador = segundos;		
-		
-		let temporizador = setInterval(function(){
-			console.log(contador + "s");
-			contador--;			
-			if(contador<0){
-				clearInterval(temporizador);
+		this.#relogio = setInterval(function(){
+			
+			switch(this.#estado){
+				case "iniciar":
+					if(this.#quadro>=0 && this.#quadro<29){
+						this.#quadro += 1;	
+						document.dispatchEvent(this.#evtQuadro);						
+					}else{	
+					
+						if(this.#segundos>=0 && this.#segundos<59){
+							this.#segundos += 1;
+							document.dispatchEvent(this.#evtSegundo);							
+						}else{
+							
+							if(this.#minutos>=0 && this.#minutos<59){
+								this.#minutos += 1;
+								document.dispatchEvent(this.#evtMinuto);
+							}else{
+								
+								if(this.#horas>=0 && this.#horas<23){
+									this.#horas += 1;
+									document.dispatchEvent(this.#evtHora);
+								}else{
+									
+									this.#horas = 0;
+								}
+								
+								this.#minutos = 0;
+								
+							}
+							this.segundos = 0;							
+						}						
+						//console.log(this.segundos);
+						this.#quadro = 0;					
+					}					
+				break;
+				case "reiniciar":
+					this.quadro = 0;
+					this.segundos = 0;
+					this.minutos = 0;
+					this.horas = 0;
+					this.estado = "iniciar";
+				break;
+				case "pausar":
+					this.quadro = this.#quadro;					
+				break;
+				case "parar":
+					this.quadro = 0;
+					this.segundos = 0;
+					this.minutos = 0;
+					this.horas = 0;
+				break;
 			}
-		},this.#intervalo);
+			
+		}.bind(this),this.#intervalo);
 	}	
+		
+		
+	iniciar(){		
+		
+	}
 	
+	reiniciar(){
+		this.#estado = "reiniciar";
+	}
+	
+	pausar(){
+		this.#estado = "pausar";
+	}
+	
+	parar(){
+		this.#estado = "parar";
+	}
+	
+	
+	get quadro(){
+		return this.#quadro;
+	}
+	
+	set quadro(quadro){
+		this.#quadro = quadro;
+	}
+	
+	get segundos(){
+		return this.#segundos;
+	}
+	
+	set segundos(segundos){
+		this.#segundos = segundos;
+	}
+	
+	get minutos(){
+		return this.#minutos;
+	}
+	
+	set segundos(minutos){
+		this.#minutos = minutos;
+	}
+	
+	get horas(){
+		return this.#horas;
+	}
+	
+	set horas(horas){
+		this.#horas = horas;
+	}
+	
+	mostrarRelogio(){
+		let horas = this.#horas.toLocaleString('pt-BR', {
+		  minimumIntegerDigits: 2, 
+		  useGrouping: false
+		});
+		let minutos = this.#minutos.toLocaleString('pt-BR', {
+		  minimumIntegerDigits: 2, 
+		  useGrouping: false
+		});
+		let segundos = this.#segundos.toLocaleString('pt-BR', {
+		  minimumIntegerDigits: 2, 
+		  useGrouping: false
+		});
+		
+		return	horas + ":" + minutos + ":" + segundos;	
+	}
 	
 }
 
@@ -314,15 +423,15 @@ class Controle {
 			{tecla: 'Space', estado: 'up', acao: ()=>{sprite.movimentoTiro()}}		
 		];
 		
-		let indice;
-		
-		console.log(this.#comando);
+		let indice;	
+
+		console.log(this.#comando);	
 		
 		document.addEventListener("keydown",function(e){			
 			switch (e.code) {
-				case "ArrowUp":					
+				case "ArrowUp":						
 					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowUp");
-					this.#comando[indice].estado = "down";				
+					this.#comando[indice].estado = "down";					
 				break;
 				case "ArrowDown":
 					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowDown");
@@ -363,7 +472,7 @@ class Controle {
 			switch (e.code) {
 				case "ArrowUp":
 					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowUp");
-					this.#comando[indice].estado = "up";				
+					this.#comando[indice].estado = "up";										
 				break;
 				case "ArrowDown":
 					indice = this.#comando.findIndex((obj,indice,array) => obj.tecla === "ArrowDown");
@@ -398,20 +507,20 @@ class Controle {
 					this.#comando[indice].estado = "up";
 				break;
 			}
-		}.bind(this));	
+		}.bind(this));		
 		
-		setInterval(function(){
+		document.addEventListener("disparoQuadro",function(){
+			
 			this.#comando.forEach((obj,indice,array) => {
 				if(obj.estado == "down"){
-					obj.acao();
+					obj.acao();					
 				}
 			});
-		}.bind(this),50);
-
+			
+			
+		}.bind(this),false);		
 		
-		
-	}
-	
+	}	
 	
 }
 
@@ -529,7 +638,7 @@ class Sprite {
 	#altura = 10;
 	#largura = 10;
 	#tamanho = 10;
-	#velocidade = 10;
+	#velocidade = 3;
 	#gravidade = CONFIG_TELA.gravidade;
 	#visibilidade = true;
 	//Evento	
@@ -556,12 +665,14 @@ class Sprite {
 		
 		this.desenhar();
 		
+		console.log("Objeto sprite '" + this.#id + "' foi criado.");
+		
 		document.addEventListener("desenharSprites",function(e){
 			if(this.#visibilidade){
-				this.desenhar();
+				this.desenhar();				
 			}			
 		}.bind(this));
-		console.log("Objeto sprite '" + this.#id + "' foi criado.");		
+				
 	}	
 	
 	destruir(){
@@ -611,9 +722,21 @@ class Sprite {
 		this.#cor = cor;
 	}
 	
+	set posX(posX){
+		this.#posX = posX;
+	}
+	
+	set posY(posY){
+		this.#posY = posY;
+	}
+	
 	set tamanho(tamanho){
 		this.#altura = tamanho;
 		this.#largura = tamanho;
+	}
+	
+	set velocidade(velocidade){
+		this.#velocidade = velocidade;
 	}
 	
 	set visibilidade(visibilidade){
@@ -660,7 +783,7 @@ class Sprite {
 	
 	movimentoEsquerda(){
 		if(this.#posX > 0){			
-			this.#posX = this.#posX - this.#largura;
+			this.#posX = this.#posX - this.#velocidade;
 			this.#tela.dispatchEvent(this.#evtSpriteMovimento);
 		}else{
 			this.#posX = 0;
@@ -699,19 +822,6 @@ class Jogador extends Sprite {
 		super.tipo = "jogador";			
 	}
 	
-	movimentoTiro(){
-			let obj = new Projetil("projetil2",super.ctx,super.posX+3,super.posY,4);			
-			let tInt = setInterval(function(){					
-				if(obj.posY>0){					
-					obj.movimentarSprite(obj.posX,obj.posY-10);					
-				}else{
-					obj.destruir();	
-					obj = null;					
-					clearInterval(tInt);									
-				}
-			}.bind(this),1000/20);				
-		
-	}
 	
 }
 
