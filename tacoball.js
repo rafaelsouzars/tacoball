@@ -32,14 +32,14 @@ class Tela {
 	#tela;
 	#canvas;
 	#ctx;
-	#temporizador;
+	#_temporizador;
 	#barra;
 	//Lista de objetos (jogador/inimigo/itens) do jogo
-	#indJogadores = 1;
-	#indInimigos = 1;
-	#indItens = 1;
+	#indJogadores;
+	#indInimigos;
+	#indItens;
 	#listaSprites;	
-	//Eventos
+	//Eventos da classe Tela
 	#evtDesenharTudo;
 	#evtDesenharHUD;
 	#evtDesenharSprites
@@ -79,14 +79,41 @@ class Tela {
 		this.#iniciarTemporizador();	
 		
 		
-	}		
+	}
+
+	//Getters e Setters da classe Tela.
+	get temporizador(){
+		return this.#_temporizador;
+	}
+	
+	get contextoTela(){
+		return this.#ctx;
+	}
+
+	get altura(){
+		return this.#_altura;
+	}
+	
+	get largura(){
+		return this.#_largura;
+	}
+	
+	
 	
 	#iniciarTemporizador(){		
-		this.#temporizador = new Temporizador();		
+		this.#_temporizador = new Temporizador();		
 		
-		document.addEventListener("disparoQuadro",function(){
-			this.desenharTela();
+		document.addEventListener("disparoQuadro",function(){ //loop principal			
+			//this.desenharTela();
+			//console.log(this.#_temporizador.quadroAtual);
+			this.rodando();
+		}.bind(this),false);	
+		
+		document.addEventListener("disparoCemMili",function(){ //loop principal		
+			//console.debug(this.#_temporizador.intervaloCemMili);			
+			this.desenharTela();			
 		}.bind(this),false);
+		
 	}	
 		
 	//Metodo responsavel em desenhar a tela do jogo
@@ -96,328 +123,86 @@ class Tela {
 		this.#tela.dispatchEvent(this.#evtDesenharSprites);						
 	}
 	
-	get tela(){
-		
-	}
-	
-	get contextoTela(){
-		return this.#ctx;
-	}
-	
-	get alturaTela(){
-		return this.#_altura;
-	}
-	
-	get larguraTela(){
-		return this.#_largura;
-	}
-	
-	getJogador(id){		
-		return this.#listaSprites.find((lista,indice,array) => lista.id === id);
-	}
-	
-	getInimigo(id){		
-		return this.#listaSprites.find((lista,indice,array) => lista.id === id);
-	}
-	
-	get quadrosPorSegundo(){
-		return this.#temporizador.quadrosPorSegundo;
-	}
-	
-	set quadrosPorSegundo(qps){
-		this.#temporizador.quadrosPorSegundo = qps;
-	}
-	
-	pausarRelogio(){
-		this.#temporizador.pausar();
-	}	
-	
 	rodando(callback){
-		document.addEventListener("disparoQuadro",function(){
-			callback();
+		document.addEventListener("disparoQuadro",function(){ //loop principal			
+			//this.desenharTela();
+			//console.log(this.#_temporizador.quadroAtual);
+			callback;
 		}.bind(this),false);
-	}
-	
-	adicionarJogador(id,posX,posY,tamanho){
-		let obj = new Jogador(id,this.#ctx,posX,posY,tamanho);
-		this.#listaSprites.push(obj);
-		return obj;
 	}	
-	
-	adicionarInimigo(id,posX,posY,tamanho){
-		let obj = new Inimigo(id,this.#ctx,posX,posY,tamanho);
-		this.#listaSprites.push(obj);
-		return obj;
-	}
-	
-	adicionarProjetil(id,posX,posY,tamanho){
-		let obj = new Projetil(id,this.#ctx,posX,posY,tamanho);
-		this.#listaSprites.push(obj);
-		return obj;
-	}
-	
-	removerJogador(id){		
-		let indice = this.#listaSprites.findIndex((lista,indice,array) => lista.id === id);
-		this.#listaSprites.splice(indice,1);
-	}	
-	
-	removerInimigo(id){
-		let indice = this.#listaSprites.findIndex((lista,indice,array) => lista.id === id);
-		this.#listaSprites.splice(indice,1);
-	}
-	
-	removerProjetil(id){
-		let indice = this.#listaSprites.findIndex((lista,indice,array) => lista.id === id);
-		this.#listaSprites.splice(indice,1);
-	}
-	
-	adicionarItem(){
-		
-	}
+
 }
 
-//Classe de inicialização do temporizador
+//Classe do Temporizador
 class Temporizador {
-	//Propriedades e atributos
-	#intervalo;
-	#quadro;
-	#segundos;
-	#minutos;
-	#horas;
-	#estado;
-	#relogio;
-	#qps = 8;
-	//Eventos
-	#evtQuadro;
-	#evtSegundo;
-	#evtMinuto;
-	#evtHora;
+	//Propriedades do temporizador	
+	#_temporizador1;
+	#_temporizador2;
+	//Atributos do temporizador
+	#qps;
+	#quadros = 0;
+	#intervaloCemMili = 0;	
+	//Eventos do temporizador
+	#evtDisparoQuadro;
+	#evtDisparoCemMili;
+	#evtDisparoSegundo;
 	
-	constructor(){		
-		this.#intervalo = 1000/this.#qps;
-		this.#quadro = 0;
-		this.#estado = RELOGIO.iniciar;
-		this.#segundos = 0;
-		this.#minutos = 0;
-		this.#horas = 0;
-		//Inicializando eventos
-		this.#evtQuadro = new CustomEvent("disparoQuadro",{detail: "Um quadro foi disparado",bubble: true,cancelable: true});
-		this.#evtSegundo = new CustomEvent("disparoSegundo",{detail: "Um segundo foi disparado",bubble: true,cancelable: true});
-		this.#evtMinuto = new CustomEvent("disparoMinuto",{detail: "Um minuto foi disparado",bubble: true,cancelable: true});
-		this.#evtHora = new CustomEvent("disparoHora",{detail: "Um hora foi disparado",bubble: true,cancelable: true});
+	constructor(){
+		this.#evtDisparoQuadro = new CustomEvent("disparoQuadro",{detail: "Um Quadro foi atualizado",bubbles: true, cancelable: true});
+		this.#evtDisparoCemMili = new CustomEvent("disparoCemMili",{detail: "Cem milisegundos foi atualizado",bubbles: true, cancelable: true});
+		this.#evtDisparoSegundo = new CustomEvent("disparoSegundo",{detail: "Um segundo foi atualizado",bubbles: true, cancelable: true});	
 		
-		
-		this.#relogio = setInterval(function(){
-			
-			switch(this.#estado){
-				case "iniciar":
-					if(this.#quadro>=0 && this.#quadro<29){
-						this.#quadro += 1;	
-						document.dispatchEvent(this.#evtQuadro);						
-					}else{	
-					
-						if(this.#segundos>=0 && this.#segundos<59){
-							this.#segundos += 1;
-							document.dispatchEvent(this.#evtSegundo);							
-						}else{
-							
-							if(this.#minutos>=0 && this.#minutos<59){
-								this.#minutos += 1;
-								document.dispatchEvent(this.#evtMinuto);
-							}else{
-								
-								if(this.#horas>=0 && this.#horas<23){
-									this.#horas += 1;
-									document.dispatchEvent(this.#evtHora);
-								}else{
-									
-									this.#horas = 0;
-								}
-								
-								this.#minutos = 0;
-								
-							}
-							this.segundos = 0;							
-						}						
-						//console.log(this.segundos);						
-						this.#quadro = 0;					
-					}					
-				break;
-				case "reiniciar":
-					this.quadro = 0;
-					this.segundos = 0;
-					this.minutos = 0;
-					this.horas = 0;
-					this.estado = "iniciar";
-				break;
-				case "pausar":
-					this.quadro = this.#quadro;					
-				break;
-				case "parar":
-					this.quadro = 0;
-					this.segundos = 0;
-					this.minutos = 0;
-					this.horas = 0;
-				break;
+		this.#_temporizador1 = setInterval(function(){
+			document.dispatchEvent(this.#evtDisparoQuadro);
+			if(this.#quadros>=0 && this.#quadros<59){
+				this.#quadros += 1;
+			}else{
+				document.dispatchEvent(this.#evtDisparoSegundo);
+				this.#quadros = 0;
 			}
 			
-		}.bind(this),this.#intervalo);
-	}	
+		}.bind(this),16.6);
 		
+		this.#_temporizador2 = setInterval(function(){
+			document.dispatchEvent(this.#evtDisparoCemMili);
+				if(this.#intervaloCemMili>=0 && this.#intervaloCemMili<1000){
+					this.#intervaloCemMili += 100;
+				}else{
+					//document.dispatchEvent(this.#evtDisparoSegundo);
+					this.#intervaloCemMili = 0;
+					
+				}			
+		}.bind(this),100);
 		
-	iniciar(){		
-		
 	}
 	
-	reiniciar(){
-		this.#estado = "reiniciar";
-	}
-	
-	pausar(){
-		this.#estado = "pausar";
-	}
-	
-	parar(){
-		this.#estado = "parar";
-	}
-	
-	
-	get quadro(){
-		return this.#quadro;
-	}
-	
-	set quadro(quadro){
-		this.#quadro = quadro;
-	}
-	
-	get segundos(){
-		return this.#segundos;
-	}
-	
-	set segundos(segundos){
-		this.#segundos = segundos;
-	}
-	
-	get minutos(){
-		return this.#minutos;
-	}
-	
-	set segundos(minutos){
-		this.#minutos = minutos;
-	}
-	
-	get horas(){
-		return this.#horas;
-	}
-	
-	set horas(horas){
-		this.#horas = horas;
-	}
-	
+	//Getters e Setters do temporizador
 	get quadroPorSegundo(){
 		return this.#qps;
 	}
 	
-	set quadroPorSegundo(qps){
-		this.#qps = qps;
-		this.#intervalo = 1000/this.#qps;
+	get quadroAtual(){
+		return this.#quadros;
 	}
 	
-	mostrarRelogio(){
-		let horas = this.#horas.toLocaleString('pt-BR', {
-		  minimumIntegerDigits: 2, 
-		  useGrouping: false
-		});
-		let minutos = this.#minutos.toLocaleString('pt-BR', {
-		  minimumIntegerDigits: 2, 
-		  useGrouping: false
-		});
-		let segundos = this.#segundos.toLocaleString('pt-BR', {
-		  minimumIntegerDigits: 2, 
-		  useGrouping: false
-		});
-		
-		return	horas + ":" + minutos + ":" + segundos;	
+	get intervaloCemMili(){
+		return this.#intervaloCemMili;
 	}
 	
-}
+	
+	//Metodos do temporizador
+	CicloQPS(callback){
+		document.addEventListener("disparoQuadro",callback.bind(this),false);
+	}
+	
+	Ciclo1Seg(callback){
+		document.addEventListener("disparoSegundo",callback.bind(this),false);
+	}
+	
+	Ciclo100Mili(callback){
+		document.addEventListener("disparoCemMili",callback.bind(this),false);
+	}
 
-//Classe de tratamento de colisões
-class Colisao {
-	
-	#objColisao;
-	#listaAcoes;
-	constructor(jog){
-		this.#objColisao = [];
-		this.#listaAcoes = new ListaAcoes();		
-		document.addEventListener("disparoQuadro",function(){
-			this.testarColisao(jog);
-		}.bind(this));			
-	}
-	
-	adicionarAcao(id,idObjCol,callback,descricao){
-		this.#listaAcoes.adicionarAcao(id,idObjCol,callback,descricao);
-	}	
-	
-	adicionarObjetoColisao(obj){
-		this.#objColisao.push(obj);		
-	}
-	
-	testarColisao(jog){		
-		this.#objColisao.forEach((obj,indice,array) => this.detectarColisao(jog,obj));		
-	}
-	
-	detectarColisao(objA,objB){		
-		if(objA.posX < objB.posX + objB.largura &&
-		objA.posX + objA.largura > objB.posX &&
-		objA.posY < objB.posY + objB.altura &&
-		objA.altura + objA.posY > objB.posY){
-			//Colisão			
-			try{
-				console.log("Colisão entre '" + objA.id + "' e '" + objB.id + "'");
-				this.#listaAcoes.executarAcao(objB.id);
-			}
-			catch{
-				console.log("Nenhuma ação vinculada a colisão com objeto: '" + objB.id + "'");
-			}			
-		}else{
-			//Sem colisão
-			
-		}
-	}
-	
-	stringOf(){
-		this.#objColisao.forEach((element,index,array) => console.log("Objeto colisão #" + index + ": " + element.id));
-	}
-}
-
-//Lista de ações
-class ListaAcoes {
-	#id;
-	#idObjCol;	
-	#callback;
-	#listaAcoes;
-	
-	constructor(){
-		this.#listaAcoes = [];
-	}
-	
-	adicionarAcao(id, idObjCol, callback, descricao){
-		let obj = { id: id, idObjCol: idObjCol, callback:  callback, descricao: descricao};
-		this.#listaAcoes.push(obj);
-		console.log(obj);
-	}
-	
-	removerAcao(id){
-		let indice = this.#listaAcoes.findIndex((lista,indice,array) => lista.id === id);
-		this.#listaAcoes.splice(indice,1);
-	}
-	
-	executarAcao(idObjCol){
-		let obj = this.#listaAcoes.find((lista,indice,array) => lista.idObjCol === idObjCol);
-		obj.callback();
-		console.log("Executar " + obj.id + " : " + obj.descricao);
-	}
 }
 
 //Classe inicialização dos controles
@@ -426,19 +211,19 @@ class Controle {
 	#comando;
 	#tecla;
 		
-	constructor(sprite){
+	constructor(objeto){
 		console.log("Objeto 'Controle' foi criado.");	
 		
 		this.#comando = [
-			{tecla: 'ArrowUp', estado: 'up', acao: ()=>{sprite.movimentoCima()}},
-			{tecla: 'ArrowDown', estado: 'up', acao: ()=>{sprite.movimentoBaixo()}},
-			{tecla: 'ArrowLeft', estado: 'up', acao: ()=>{sprite.movimentoEsquerda()}},
-			{tecla: 'ArrowRight', estado: 'up', acao: ()=>{sprite.movimentoDireita()}},
+			{tecla: 'ArrowUp', estado: 'up', acao: ()=>{objeto.movimentoCima()}},
+			{tecla: 'ArrowDown', estado: 'up', acao: ()=>{objeto.movimentoBaixo()}},
+			{tecla: 'ArrowLeft', estado: 'up', acao: ()=>{objeto.movimentoEsquerda()}},
+			{tecla: 'ArrowRight', estado: 'up', acao: ()=>{objeto.movimentoDireita()}},
 			{tecla: 'KeyZ', estado: 'up', acao: ()=>{console.log("Z")}},
 			{tecla: 'KeyX', estado: 'up', acao: ()=>{console.log("X")}},
 			{tecla: 'Shiftleft', estado: 'up', acao: ()=>{console.log("ShiftEsquerdo")}},
-			{tecla: 'ControlLeft', estado: 'up', acao: ()=>{console.log("ShiftEsquerdo")}},
-			{tecla: 'Space', estado: 'up', acao: ()=>{sprite.movimentoTiro()}}		
+			{tecla: 'ControlLeft', estado: 'up', acao: ()=>{console.log("ControlEsquerdo")}},
+			{tecla: 'Space', estado: 'up', acao: ()=>{objeto.movimentoTiro()}}		
 		];
 		
 		let indice;	
@@ -542,15 +327,447 @@ class Controle {
 	
 }
 
+class Relogio {
+	//Propriedades
+	#_relogio;
+	//Atributos
+	#horas;
+	#minutos;
+	#segundos;
+	
+	
+	constructor(){
+		this.#_relogio = "00:00:00";		
+		this.#horas = 0;
+		this.#minutos = 0;
+		this.#segundos = 0;
+		
+		let h;
+		let m;
+		let s;			
+		
+		document.addEventListener("disparoSegundo",function(){ //Evento de captura dos segundos do temporizador
+		
+		if(this.#segundos>=0 && this.#segundos<59){ //Atualização dos segundos
+			
+			s = this.#segundos.toLocaleString('pt-BR', {
+			  minimumIntegerDigits: 2, 
+			  useGrouping: false
+			});
+			
+			m = this.#minutos.toLocaleString('pt-BR', {
+				  minimumIntegerDigits: 2, 
+				  useGrouping: false
+				});
+				
+			h = this.#horas.toLocaleString('pt-BR', {
+			  minimumIntegerDigits: 2, 
+			  useGrouping: false
+			});
+			
+			this.#segundos += 1;
+			
+		}else{
+			
+			s = this.#segundos.toLocaleString('pt-BR', {
+			  minimumIntegerDigits: 2, 
+			  useGrouping: false
+			});	
+
+			m = this.#minutos.toLocaleString('pt-BR', {
+				  minimumIntegerDigits: 2, 
+				  useGrouping: false
+				});
+				
+			h = this.#horas.toLocaleString('pt-BR', {
+			  minimumIntegerDigits: 2, 
+			  useGrouping: false
+			});
+			
+			if(this.#minutos>=0 && this.#minutos<59){ //Atualização dos minutos
+				
+				this.#minutos += 1;				
+				
+			}else{	
+
+				if(this.#horas>=0 && this.#horas<23){ //Atualização das horas
+				
+					this.#horas += 1;				
+				
+				}else{				
+					
+					this.#horas = 0;
+					
+				}
+				
+				this.#minutos = 0;
+				
+			}
+			
+			this.#segundos = 0;
+			
+		}			
+			
+			this.#_relogio = h + ":" + m + ":" + s;
+						
+		}.bind(this),false);
+		
+		
+	}
+	
+	//Metodos da classe Relogio
+	
+	mostrarRelogio(){	
+		
+		return	this.#_relogio;	
+		
+	}
+}
+
+class Cronometro {
+	//Propriedades da classe cronometro
+	#_cronometro;
+	#_estado;
+	//Atributos	
+	#segundos;
+	#valor;
+	//Eventos da classe
+	#evtCronometroRodando;
+	#evtCronometroPausado;
+	#evtCronometroParado;
+	#evtCronometroReiniciado;
+	
+	
+	constructor(valor){
+					
+		this.#segundos = valor;
+		this.#_cronometro = this.#segundos.toLocaleString('pt-BR', {
+					  minimumIntegerDigits: 3, 
+					  useGrouping: false
+					}) + "s";
+		this.#valor = valor;
+		this.#_estado = "0";
+		
+		
+		this.#evtCronometroRodando = new CustomEvent("cronometroRodando",{detail: "O cronometro esta em andamento",bubbles: true, cancelable: true});
+		this.#evtCronometroPausado = new CustomEvent("cronometroPausado",{detail: "O cronometro esta pausado",bubbles: true, cancelable: true});
+		this.#evtCronometroParado = new CustomEvent("cronometroParado",{detail: "O cronometro esta parado",bubbles: true, cancelable: true});
+		this.#evtCronometroReiniciado = new CustomEvent("cronometroReiniciado",{detail: "O cronometro foi reiniciado",bubbles: true, cancelable: true});	
+		
+		let s;			
+		
+		document.addEventListener("disparoSegundo",function(){ //Evento de captura dos segundos do temporizador
+		
+		
+		
+		if(this.#segundos>=1 && this.#segundos<=valor){ //Atualização dos segundos
+		
+					this.#segundos -= 1;
+			
+					s = this.#segundos.toLocaleString('pt-BR', {
+					  minimumIntegerDigits: 3, 
+					  useGrouping: false
+					});
+										
+					document.dispatchEvent(this.#evtCronometroRodando);	
+					
+				}else{
+					
+					this.#segundos = 0;
+					
+					s = this.#segundos.toLocaleString('pt-BR', {
+					  minimumIntegerDigits: 3, 
+					  useGrouping: false
+					});					
+					
+					document.dispatchEvent(this.#evtCronometroParado);	
+					
+				}			
+					
+					this.#_cronometro = s + "s";
+		
+		
+						
+		}.bind(this),false);
+		
+		
+	}
+	
+	
+	//Metodos da classe cronometro
+	
+	parar(){
+		this.#segundos = 0;
+	}
+	
+	reiniciar(){
+		this.#segundos = this.#valor;
+	}
+	
+	mostrarCronometro(){	
+		
+		return	this.#_cronometro;	
+		
+	}
+	
+	
+}
+
+//Classe de tratamento de colisões
+class Colisao {
+	
+	#objColisao;
+	#listaAcoes;
+	constructor(jog){
+		this.#objColisao = [];
+		this.#listaAcoes = new ListaAcoes();		
+		document.addEventListener("disparoQuadro",function(){
+			this.testarColisao(jog);
+		}.bind(this));			
+	}
+	
+	adicionarAcao(id,idObjCol,callback,descricao){
+		this.#listaAcoes.adicionarAcao(id,idObjCol,callback,descricao);
+	}	
+	
+	adicionarObjetoColisao(obj){
+		this.#objColisao.push(obj);		
+	}
+	
+	testarColisao(jog){		
+		this.#objColisao.forEach((obj,indice,array) => this.detectarColisao(jog,obj));		
+	}
+	
+	detectarColisao(objA,objB){		
+		if(objA.posX < objB.posX + objB.largura &&
+		objA.posX + objA.largura > objB.posX &&
+		objA.posY < objB.posY + objB.altura &&
+		objA.altura + objA.posY > objB.posY){
+			//Colisão			
+			try{
+				console.log("Colisão entre '" + objA.id + "' e '" + objB.id + "'");
+				this.#listaAcoes.executarAcao(objB.id);
+			}
+			catch{
+				console.log("Nenhuma ação vinculada a colisão com objeto: '" + objB.id + "'");
+			}			
+		}else{
+			//Sem colisão
+			
+		}
+	}
+	
+	stringOf(){
+		this.#objColisao.forEach((element,index,array) => console.log("Objeto colisão #" + index + ": " + element.id));
+	}
+}
+
+//Lista de ações
+class ListaAcoes {
+	#id;
+	#idObjCol;	
+	#callback;
+	#listaAcoes;
+	
+	constructor(){
+		this.#listaAcoes = [];
+	}
+	
+	adicionarAcao(id, idObjCol, callback, descricao){
+		let obj = { id: id, idObjCol: idObjCol, callback:  callback, descricao: descricao};
+		this.#listaAcoes.push(obj);
+		console.log(obj);
+	}
+	
+	removerAcao(id){
+		let indice = this.#listaAcoes.findIndex((lista,indice,array) => lista.id === id);
+		this.#listaAcoes.splice(indice,1);
+	}
+	
+	executarAcao(idObjCol){
+		let obj = this.#listaAcoes.find((lista,indice,array) => lista.idObjCol === idObjCol);
+		obj.callback();
+		console.log("Executar " + obj.id + " : " + obj.descricao);
+	}
+	
+}
+
+
+//Classe base para texto
+class Texto {
+	//Atributos	da classe texto	
+	#_posX = 0;
+	#_posY = 0;
+	#_corTexto;
+	#_tamanhoTexto = 10;
+	#_texto;
+	
+	//Construtor da classe texto
+	constructor(){					
+		this.#_texto = "Texto Aqui";
+	}
+	
+	
+	//Getters e Setters da classe texto
+	get texto(){		
+		return this.#_texto;
+	}
+	
+	set texto(valor){
+		this.#_texto = valor;		
+	}
+	
+	get tamanhoTexto(){
+		return this.#_tamanhoTexto + "px Arial Black";
+	}
+	
+	set tamanhoTexto(tamanho){
+		this.#_tamanhoTexto = tamanho;
+	}
+
+	get posX(){
+		return this.#_posX;
+	}
+	
+	set posX(valor){
+		this.#_posX = valor;
+	}
+	
+	get posY(){
+		return this.#_posY;
+	}
+	
+	set posY(valor){
+		this.#_posY = valor;
+	}
+	
+	//Metodos
+	posicaoXY(posX,posY){
+		this.#_posX = posX;
+		this.#_posY = posY;
+	}
+}
+
+//Classe TextoPlacar
+class TextoPlacar extends Texto {
+	//Atributos
+	#ctx;
+	
+	//Construtor
+	constructor(ctx,posX,posY){
+		super();
+		super.posX = posX;
+		super.posY = posY;
+		this.#ctx = ctx;
+		this.desenhar();		
+		
+		console.info("Objeto 'TextoPlacar' foi criado");
+		
+		document.addEventListener("desenharHUD",function(e){
+			this.desenhar();
+		}.bind(this));
+	}
+	
+	//Getters e Setters
+	
+	//Metodos
+	
+	desenhar(){		
+		this.#ctx.fillStyle = "black";
+		this.#ctx.font = super.tamanhoTexto;
+		this.#ctx.fillText(super.texto,super.posX,super.posY);		
+	}
+}
+
+
+//Classe Texto Relogio
+class TextoRelogio extends Texto {
+	//Atributos
+	#ctx;
+	#relogio;
+	
+	//Construtor
+	constructor(ctx,posX,posY){
+		super();
+		super.posX = posX;
+		super.posY = posY;
+		this.#ctx = ctx;
+		this.#relogio = new Relogio();
+		this.desenhar();
+		
+		console.log("Objeto 'textoRelogio' foi criado");
+		
+		document.addEventListener("desenharHUD",function(e){
+			this.desenhar();
+		}.bind(this));
+	}
+	
+	//Getters e Setters
+	
+	//Metodos
+	
+	desenhar(){		
+		this.#ctx.fillStyle = "black";
+		this.#ctx.font = super.tamanhoTexto;
+		this.#ctx.fillText(this.#relogio.mostrarRelogio(),super.posX,super.posY);		
+	}
+	
+}
+
+//Classe Texto Relogio
+class TextoCronometro extends Texto {
+	//Atributos
+	#ctx;
+	#cronometro;
+	#img;
+	
+	//Construtor
+	constructor(ctx,valor,posX,posY){
+		super();
+		super.posX = posX;
+		super.posY = posY;
+		this.#ctx = ctx;
+		this.#img = new Image(12,12);
+		this.#img.onload = ()=>{
+			this.#ctx.drawImage(this.#img,super.posX-12,super.posY-9);	
+			console.log("Imagem do cronometro foi carregada");
+		} 
+		this.#img.src = "assets/img/cronometro.png";
+		this.#cronometro = new Cronometro(valor);
+		this.desenhar();
+		
+		console.log("Objeto 'textoCronometro' foi criado");
+		
+		document.addEventListener("desenharHUD",function(e){
+			this.desenhar();
+		}.bind(this));
+	}
+	
+	//Getters e Setters
+	
+	//Metodos
+	
+	desenhar(){
+		this.#ctx.drawImage(this.#img,super.posX-12,super.posY-9);				
+		this.#ctx.font = super.tamanhoTexto;
+		this.#ctx.fillStyle = "black";	
+		this.#ctx.fillText(this.#cronometro.mostrarCronometro(),super.posX,super.posY);	
+			
+	}
+	
+}
+
 //Classe base para as barras do HUD
 class Barra {
 	//Metodos e atributos
-	#_min = 0;
-	#_max = 100;
-	#valor = 100;
+	#_min;
+	#_max;
+	#valor;
 	
 	constructor(){		
-		console.log("Objeto 'Barra' foi criado.");
+		this.#_min = 0;
+		this.#_max = 100;
+		this.#valor = 100;
 	}
 	
 	get valor(){		
@@ -599,6 +816,7 @@ class Barra {
 	
 }
 
+
 class BarraVida extends Barra {
 	#ctx;
 	#indiceCamada = 0;
@@ -629,7 +847,7 @@ class BarraVida extends Barra {
 	}	
 	
 	
-	posicao(posX,posY){
+	posicaoXY(posX,posY){
 		if(posX<0){
 			this.#_posX = 1;
 			console.log("Posição X da Barra menor que zero. Atualizada para: " + this.#_posX);
@@ -646,10 +864,17 @@ class BarraVida extends Barra {
 	}
 }
 
+class Animacao {
+	
+	
+	
+}
+
 //Classe base de sprites
-class Sprite {
+class Objeto {
+	//Propriedades
 	#id;
-	#tipo = "sprite";
+	#tipo = "Objeto";
 	#indiceCamada = 1;
 	#tela;
 	#cor;
@@ -661,8 +886,8 @@ class Sprite {
 	#tamanho = 10;
 	#velocidade = 10;
 	#gravidade = CONFIG_TELA.gravidade;
-	#visibilidade = true;
-	//Evento	
+	#visibilidade;
+	//Eventos da classe Objeto	
 	#evtSpriteMovimento;
 	#evtSpriteTiro;
 	#evtSpriteDestruir;
@@ -679,6 +904,7 @@ class Sprite {
 		this.#cor = "blue";
 		this.#tela = document.getElementById("tela");
 		this.#ctx = ctx;
+		this.#visibilidade = true;
 		
 		this.#evtSpriteMovimento = new CustomEvent(this.#tipo + "Movimento",{detail: "Sprite em movimento",bubbles: true, cancelable: true});
 		this.#evtSpriteTiro = new CustomEvent(this.#tipo + "Tiro",{detail: "Sprite atirou",bubbles: true, cancelable: true});
@@ -689,7 +915,7 @@ class Sprite {
 		console.log("Objeto sprite '" + this.#id + "' foi criado.");
 		
 		document.addEventListener("desenharSprites",function(e){
-			if(this.#visibilidade){
+			if(this.#visibilidade){				
 				this.desenhar();				
 			}			
 		}.bind(this));
@@ -733,6 +959,10 @@ class Sprite {
 	
 	get tipo(){
 		return this.#tipo;
+	}
+	
+	get visibilidade(){
+		return this.#visibilidade;
 	}
 
 	set tipo(tipo){
@@ -812,14 +1042,16 @@ class Sprite {
 	}
 	
 	movimentoBala(){
-		document.addEventListener("disparoQuadro",function(){
-			if(this.#posY > 0){			
-				this.#posY = this.#posY - this.#velocidade;
-				this.#tela.dispatchEvent(this.#evtSpriteMovimento);
-			}else{
-				this.#posY = 0;
-			}
-		}.bind(this),false);
+		
+		if(this.#posY > 0){
+			this.#visibilidade = true;
+			this.#posY = this.#posY - this.#velocidade;
+			this.#tela.dispatchEvent(this.#evtSpriteMovimento);			 
+		}else{
+			this.#posY = 0;
+			this.#visibilidade = false;
+		}
+		
 	}
 	
 	movimentoPulo(){
@@ -846,18 +1078,30 @@ class Sprite {
 }
 
 //Classe Jogador
-class Jogador extends Sprite {
+class Jogador extends Objeto {
 	
 	#bala;
 	#emMov;
 	
 	constructor(id,ctx,posX,posY,tamanho){
 		super(id,ctx,posX,posY,tamanho);
-		super.tipo = "jogador";		
+		this.tipo = "jogador";		
 		this.#emMov = false;		
-	}	
+	}
+
+	desenhar(){
+		super.desenhar();
+		document.addEventListener("projetilDestruido",function(){
+			this.#emMov = false;			
+		}.bind(this),false);
+	}
 	
 	movimentoTiro(){
+		if(this.#emMov==false){
+			this.#bala = new Projetil("bala",super.ctx,super.posX+3,super.posY);		
+			this.#emMov = true;
+		}
+			
 			
 		
 	}
@@ -865,7 +1109,7 @@ class Jogador extends Sprite {
 }
 
 //Classe Inimigo
-class Inimigo extends Sprite {	
+class Inimigo extends Objeto {	
 	
 	constructor(id,ctx,posX,posY,tamanho){
 		super(id,ctx,posX,posY,tamanho);
@@ -875,11 +1119,23 @@ class Inimigo extends Sprite {
 	
 }
 
-class Projetil extends Sprite {
+class Projetil extends Objeto {
 	
-	constructor(id,ctx,posX,posY,tamanho){		
+	#evtProjetilDestruido;
+	
+	constructor(id,ctx,posX,posY,tamanho=4){		
 		super(id,ctx,posX,posY,tamanho);
-		super.tipo = "projetil";				
+		this.tipo = "projetil";			
+		this.#evtProjetilDestruido = new CustomEvent("projetilDestruido",{detail: "O projetil foi destruido", bubbles: true, cancelable: true});		
 	}
+	
+	desenhar(){	
+		super.desenhar();		
+		this.movimentoBala();
+		if(this.visibilidade==false){
+					
+			document.dispatchEvent(this.#evtProjetilDestruido);
+		}		
+	}	
 	
 }
