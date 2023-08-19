@@ -1,6 +1,6 @@
 # tacoball
 
-Motor gráfico em javascript para desenvolvimento de jogos HTML5. ![Static Badge](https://img.shields.io/badge/version-0.1-green) ![Static Badge](https://img.shields.io/badge/status-em desenvolvimento-yellow)
+Motor gráfico em javascript para desenvolvimento de jogos HTML5. ![Static Badge](https://img.shields.io/badge/version-0.1-green) ![Static Badge](https://img.shields.io/badge/status-em_desenvolvimento-yellow)
 
 #### Projeto
 
